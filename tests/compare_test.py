@@ -7,50 +7,51 @@ from dict_toolset._compare import DifferenceType, DifferencePointer
 class CompareTest(unittest.TestCase):
 
     def test_c1(self):
-        data_1 = {
+        result = list(compare({
             "name": "Supi",
             "sub": {
                 "name": "SupiSub"
             }
-        }
-        data_2 = {
+        }, {
             "name": "Supi",
             "sub": {
                 "name": "SupiSub",
                 "content": "Sdjjahsdh"
             }
-        }
-
-        result = list(compare(data_1, data_2))
-
+        }))
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0].type, DifferenceType.MISSING)
-        self.assertEqual(result[0].pointer, DifferencePointer.A)
+        self.assertEqual(
+            result[0],
+            "DifferenceType.MISSING sub.content None!=None"
+        )
 
     def test_c2(self):
-        data_1 = {
+        result = list(compare({
             "name": "Supi",
             "subs": [
                 "str"
             ]
-        }
-        data_2 = {
+        }, {
             "name": "Supi",
             "subs": [
                 "str",
                 "duf"
             ]
-        }
+        }))
+        self.assertEqual(len(result), 1)
+        self.assertEqual(
+            result[0],
+            "DifferenceType.MISSING subs.[1] None!=None"
+        )
 
     def test_c3(self):
-        data_1 = [
+        result = list(compare([
             {
                 "id": "djajshd",
                 "name": "supi",
                 "kacki": "dsadasdasd"
             }
-        ]
-        data_2 = [
+        ], [
             {
                 "id": "djajshd",
                 "name": "supi",
@@ -61,7 +62,10 @@ class CompareTest(unittest.TestCase):
                 "name": "supi2",
                 "kacki": "dsad2asdasdd"
             },
-        ]
-
-        self.print_result(list(compare(data_1, data_2)))
+        ]))
+        self.assertEqual(len(result), 1)
+        self.assertEqual(
+            result[0],
+            "DifferenceType.MISSING [('id', 'sdajsjdhas')] None!=None"
+        )
         

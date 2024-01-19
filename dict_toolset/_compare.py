@@ -48,10 +48,18 @@ class Difference:
     @property
     def key_str(self):
         return ".".join(self.key)
-    
+
     def __repr__(self) -> str:
         return f"{self.type} {self.key_str} {self.value_a}!={self.value_b}"
-    
+
+    def __eq__(self, other) -> bool:
+        if isinstance(other, str):
+            return repr(self) == other
+        return (
+            type(self) == type(other)
+            and repr(self) == repr(other)
+        )
+
     def build_dict(self) -> dict:
         current = {"type": self.type}
         if self.value_a: current["value_a"] = self.value_a

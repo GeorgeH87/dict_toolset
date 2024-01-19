@@ -3,6 +3,7 @@ import sys
 import unittest
 import logging
 import xmlrunner
+from pathlib import Path
 
 
 logging.basicConfig(
@@ -11,9 +12,10 @@ logging.basicConfig(
 )
 
 suite = unittest.TestSuite()
-this_dir = os.path.dirname(__file__)
+current_dir = Path(__file__).parent
 loader = unittest.TestLoader()
-package_tests = loader.discover(start_dir=this_dir, pattern="*test.py")
+package_tests = loader.discover(
+    start_dir=current_dir.parent, pattern="*test.py")
 suite.addTests(package_tests)
 runner = xmlrunner.XMLTestRunner(output='test-reports')
 rtn = not runner.run(suite).wasSuccessful()
