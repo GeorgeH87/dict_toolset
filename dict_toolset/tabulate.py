@@ -1,7 +1,10 @@
 from typing import Callable
 
 
-def _merge(*args: dict | list) -> dict | list:
+def _merge(
+    *args: dict | list,
+    add_list_index: bool = True
+) -> dict | list:
     """Merge a custom list of dictionaries and lists. In case that the input 
     list contains one list, the output will always be a list. In case that the 
     input does not contain any list, the output will be a dictionary.
@@ -20,7 +23,10 @@ def _merge(*args: dict | list) -> dict | list:
         return table
     if not table:
         return row
-    return [row | (entry or {}) for entry in table]
+    return [
+        row | (entry or {}) | {"index": index} if add_list_index else {}
+        for index, entry in enumerate(table)
+    ]
 
 
 class FilterValue():
