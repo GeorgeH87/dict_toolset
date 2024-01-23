@@ -24,7 +24,7 @@ def _merge(
     if not table:
         return row
     return [
-        row | (entry or {}) | {"index": index} if add_list_index else {}
+        row | (entry or {}) | ({"index": index} if add_list_index else {})
         for index, entry in enumerate(table)
     ]
 
@@ -68,7 +68,8 @@ def tabulate(
     data: any,
     current_key: tuple = None,
     exclude_keys: list[tuple] = None,
-    key_converter: Callable[[tuple], any] = None
+    key_converter: Callable[[tuple], any] = None,
+    add_list_index: bool = True
 ) -> list | dict:
     """Convert a list or a dictionary recursively to a table formatted output. 
     E.g. use the ouput to write it into a csv file (using the CsvDictWriter)
@@ -85,6 +86,8 @@ def tabulate(
         E.g. you can create a . separated key name. By default the key is kept 
         as tuple, defaults to None
     :type key_converter: Callable[[tuple], any], optional
+    :param add_list_index: _description_, defaults to True
+    :type add_list_index: bool, optional
     :return: The function will return list or a dict based on the input data
     :rtype: list | dict
     """
@@ -101,7 +104,8 @@ def tabulate(
                 entry,
                 current_key,
                 exclude_keys,
-                key_converter
+                key_converter,
+                add_list_index
             ) for entry in data
         ]]
     elif isinstance(data, dict):
@@ -110,7 +114,8 @@ def tabulate(
                 entry,
                 current_key + (key,),
                 exclude_keys,
-                key_converter
+                key_converter,
+                add_list_index
             ) for key, entry in data.items()
         ]
     else:
@@ -118,7 +123,7 @@ def tabulate(
             current_key = key_converter(current_key)
         entries = [{current_key: data}]
 
-    return _merge(*entries)
+    return _merge(*entries, add_list_index=add_list_index)
 
 
 def get_columns(table: list | dict) -> set:

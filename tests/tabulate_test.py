@@ -23,7 +23,8 @@ class TabulateTest(unittest.TestCase):
                     {"da": "da2"},
                 ]
             }, 
-            key_converter = lambda x: ".".join(x)
+            key_converter = lambda x: ".".join(x),
+            add_list_index = False
         )
 
         expected_output = [
