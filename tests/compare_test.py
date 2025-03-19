@@ -20,10 +20,7 @@ class CompareTest(unittest.TestCase):
             }
         }))
         self.assertEqual(len(result), 1)
-        self.assertEqual(
-            result[0],
-            "DifferenceType.MISSING sub.content None!=None"
-        )
+        self.assertEqual(result[0], "MISSING sub.content")
 
     def test_c2(self):
         result = list(compare({
@@ -39,10 +36,7 @@ class CompareTest(unittest.TestCase):
             ]
         }))
         self.assertEqual(len(result), 1)
-        self.assertEqual(
-            result[0],
-            "DifferenceType.MISSING subs.[1] None!=None"
-        )
+        self.assertEqual(result[0], "MISSING subs.[1]")
 
     def test_c3(self):
         result = list(compare([
@@ -64,8 +58,4 @@ class CompareTest(unittest.TestCase):
             },
         ]))
         self.assertEqual(len(result), 1)
-        self.assertEqual(
-            result[0],
-            "DifferenceType.MISSING [('id', 'sdajsjdhas')] None!=None"
-        )
-        
+        self.assertEqual(result[0], "MISSING [('id', 'sdajsjdhas')]")

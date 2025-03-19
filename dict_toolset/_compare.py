@@ -1,26 +1,16 @@
-from typing import Callable
-from enum import Enum, auto
+from typing import Callable, Literal, Generator
 
 from ._key_extractor import default_dict_key_extractor
 from ._basic import list_to_dict, extend_list
 
 
-class DifferenceType(Enum):
-    TYPE = auto()
-    MISSING = auto()
-    NOT_EQUAL = auto()
-
-class DifferencePointer(Enum):
-    A = auto()
-    B = auto()
-
-
-class Field:
-
-    __slots__ = ("name",)
-
-    def __init__(self, name) -> None:
-        self.name = name
+DifferenceType = Literal["TYPE", "MISSING", "NOT_EQUAL"]
+DifferencePointer = Literal["A", "B"]
+DifferenceGenerator = Generator["Difference", None, None]
+TypeComparer = Callable[
+    ["Comparer", any, any, list[str]],
+    Generator["Difference", None, None]
+]
 
 
 class Difference:
@@ -50,7 +40,10 @@ class Difference:
         return ".".join(self.key)
 
     def __repr__(self) -> str:
-        return f"{self.type} {self.key_str} {self.value_a}!={self.value_b}"
+        rtn = f"{self.type} {self.key_str}"
+        if self.value_a or self.value_b:
+            return f"{rtn} {self.value_a}!={self.value_b}"
+        return rtn
 
     def __eq__(self, other) -> bool:
         if isinstance(other, str):
@@ -87,68 +80,107 @@ def get_index(entry: dict, *index_keys) -> str:
         if index := entry.get(index_key):
             return index
 
-def compare(
-    data_a,
-    data_b,
-    current_key: list[str] = None,
-    ignore_keys: list[list[str]] = None,
-    key_extractors: list[Callable] = [default_dict_key_extractor],
-):
+class Comparer:
 
-    if current_key and ignore_keys and current_key in ignore_keys:
-        return
+    def __init__(
+        self,
+        key_extractors: list[Callable] = None,
+        type_comparers: dict[type, TypeComparer] = None,
+        ignore_keys: list[list[str]] = None
+    ):
+        self.key_extractors = key_extractors or [default_dict_key_extractor]
+        self.type_comparers = type_comparers or default_type_comparers
+        self.ignore_keys = ignore_keys
 
-    if data_a == data_b:
-        return
+    def compare(
+        self,
+        data_a: any,
+        data_b: any,
+        current_key: list[str] = None,
+    ) -> DifferenceGenerator:
+        if current_key and self.ignore_keys and current_key in self.ignore_keys:
+            return
 
-    if not current_key:
-        current_key = []
+        if not current_key:
+            current_key = []
 
-    type_a = type(data_a)
-    type_b = type(data_b)
+        type_a = type(data_a)
+        type_b = type(data_b)
 
-    if type_a != type_b:
+        if type_a != type_b:
+            yield Difference(
+                current_key,
+                "NOT_EQUAL",
+                value_a=data_a,
+                value_b=data_b
+            )
+            return
+
+        if type_comparer := self.type_comparers.get(type_a):
+            yield from type_comparer(self, data_a, data_b, current_key)
+            return
+
+        if data_a == data_b:
+            return
+
         yield Difference(
             current_key,
-            DifferenceType.TYPE,
-            type_a,
-            type_b
-        )
-        return
-
-    if data_a == data_b:
-        return
-
-    if type_a == dict:
-        keys_a = data_a.keys()
-        keys_b = data_b.keys()
-
-        for key in keys_a:
-            if not key in keys_b:
-                yield Difference(
-                    current_key + [key],
-                    DifferenceType.MISSING,
-                    DifferencePointer.B
-                )
-
-        for key in keys_b:
-            if not key in keys_a:
-                yield Difference(
-                    current_key + [key],
-                    DifferenceType.MISSING,
-                    DifferencePointer.A
-                )
-            else:
-                yield from compare(
-                    data_a[key], data_b[key], current_key + [key])
-    elif type_a == list:
-        list_a = list_to_dict(data_a, key_extractors)
-        list_b = list_to_dict(data_b, key_extractors)
-        yield from compare(list_a, list_b, current_key)
-    else:
-        yield Difference(
-            current_key,
-            DifferenceType.NOT_EQUAL,
+            "NOT_EQUAL",
             value_a = data_a,
             value_b = data_b
         )
+
+def dict_compare(
+    comparer: Comparer,
+    data_a: dict,
+    data_b: dict,
+    current_key: list[str] = None,
+) -> DifferenceGenerator:
+    if data_a == data_b:
+        return
+
+    keys_a = data_a.keys()
+    keys_b = data_b.keys()
+
+    for key in keys_a:
+        if not key in keys_b:
+            yield Difference(
+                current_key + [key],
+                "MISSING",
+                pointer="B"
+            )
+
+    for key in keys_b:
+        if not key in keys_a:
+            yield Difference(
+                current_key + [key],
+                "MISSING",
+                pointer="A"
+            )
+        else:
+            yield from comparer.compare(
+                data_a[key], data_b[key], current_key + [key])
+
+def list_compare(
+    comparer: Comparer,
+    data_a: list,
+    data_b: list,
+    current_key: list[str] = None,
+) -> DifferenceGenerator:
+    if data_a == data_b:
+        return
+
+    list_a = list_to_dict(data_a, comparer.key_extractors)
+    list_b = list_to_dict(data_b, comparer.key_extractors)
+    yield from comparer.compare(list_a, list_b, current_key)
+
+default_type_comparers = {
+    dict: dict_compare,
+    list: list_compare,
+    tuple: list_compare
+}
+
+default_comparer = Comparer()
+
+def compare(data_a: any, data_b: any) -> DifferenceGenerator:
+    yield from default_comparer.compare(data_a, data_b)
