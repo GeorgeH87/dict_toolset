@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='dict_toolset',
-    version=os.getenv("GITHUB_REF").split("/")[-1],
+    version=os.getenv("GITHUB_REF").split("/")[-1][1:],
     author='George Haddad',
     description='a toolset to work with python dictonaries and arrays',
     long_description_content_type='text/markdown',
