@@ -9,5 +9,4 @@ def default_dict_key_extractor(entry):
     if isinstance(entry, dict):
         for key in ('id', 'ID', 'uuid', 'UUID'):
             if key in entry:
-                return (key, entry[key])
-                return f"{key}:{entry[key]}"
+                return f"{key}={entry[key]}"

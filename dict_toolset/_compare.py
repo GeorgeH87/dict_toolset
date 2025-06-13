@@ -5,7 +5,6 @@ from ._basic import list_to_dict, extend_list
 
 
 DifferenceType = Literal["TYPE", "MISSING", "NOT_EQUAL"]
-DifferencePointer = Literal["A", "B"]
 DifferenceGenerator = Generator["Difference", None, None]
 TypeComparer = Callable[
     ["Comparer", any, any, list[str]],
@@ -23,24 +22,27 @@ class Difference:
         self,
         key: list[str],
         type: DifferenceType,
-        pointer: DifferencePointer = None,
         value_a = None,
         value_b = None,
         references: list = None
     ) -> None:
         self.key = key
         self.type = type
-        self.pointer = pointer
         self.value_a = value_a
         self.value_b = value_b
         self.references = references
 
     @property
     def key_str(self):
-        return ".".join(self.key)
+        return ".".join(self.key).replace(".[", "[")
 
     def __repr__(self) -> str:
         rtn = f"{self.type} {self.key_str}"
+        if self.type == "MISSING":
+            if self.value_a is not None:
+                return f"{rtn} IN B: {self.value_a}"
+            if self.value_b is not None:
+                return f"{rtn} IN A: {self.value_b}"
         if self.value_a or self.value_b:
             return f"{rtn} {self.value_a}!={self.value_b}"
         return rtn
@@ -57,7 +59,6 @@ class Difference:
         current = {"type": self.type}
         if self.value_a: current["value_a"] = self.value_a
         if self.value_b: current["value_b"] = self.value_b
-        if self.pointer: current["pointer"] = self.pointer
 
         for key in reversed(self.key):
             if key.startswith("[") and key.endswith("]"):
@@ -147,7 +148,7 @@ def dict_compare(
             yield Difference(
                 current_key + [key],
                 "MISSING",
-                pointer="B"
+                value_a=data_a[key],
             )
 
     for key in keys_b:
@@ -155,7 +156,7 @@ def dict_compare(
             yield Difference(
                 current_key + [key],
                 "MISSING",
-                pointer="A"
+                value_b=data_b[key],
             )
         else:
             yield from comparer.compare(

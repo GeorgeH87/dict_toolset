@@ -1,7 +1,7 @@
 __title__ = "dict_toolset"
 __description__ = ""
 __url__ = "https://dict_tools.readthedocs.io"
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __build__ = 0x023100
 __author__ = "George Haddad"
 __author_email__ = "georgeh87@live.de"

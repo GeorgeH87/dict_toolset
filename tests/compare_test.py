@@ -1,7 +1,7 @@
 import unittest
 
 from dict_toolset import compare
-from dict_toolset._compare import DifferenceType, DifferencePointer
+from dict_toolset._compare import DifferenceType
 
 
 class CompareTest(unittest.TestCase):
@@ -20,7 +20,7 @@ class CompareTest(unittest.TestCase):
             }
         }))
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0], "MISSING sub.content")
+        self.assertEqual(result[0], "MISSING sub.content IN A: Sdjjahsdh")
 
     def test_c2(self):
         result = list(compare({
@@ -36,7 +36,7 @@ class CompareTest(unittest.TestCase):
             ]
         }))
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0], "MISSING subs.[1]")
+        self.assertEqual(result[0], "MISSING subs[1] IN A: duf")
 
     def test_c3(self):
         result = list(compare([
@@ -58,4 +58,4 @@ class CompareTest(unittest.TestCase):
             },
         ]))
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0], "MISSING [('id', 'sdajsjdhas')]")
+        self.assertEqual(result[0], "MISSING [id=sdajsjdhas] IN A: {'id': 'sdajsjdhas', 'name': 'supi2', 'kacki': 'dsad2asdasdd'}")
