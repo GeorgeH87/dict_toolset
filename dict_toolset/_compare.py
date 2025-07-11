@@ -178,9 +178,6 @@ def list_compare(
 
     list_a = list_to_dict(sorted_a, comparer.key_extractors)
     list_b = list_to_dict(sorted_b, comparer.key_extractors)
-
-    list_a = list_to_dict(data_a, comparer.key_extractors)
-    list_b = list_to_dict(data_b, comparer.key_extractors)
     yield from comparer.compare(list_a, list_b, current_key)
 
 default_type_comparers = {
