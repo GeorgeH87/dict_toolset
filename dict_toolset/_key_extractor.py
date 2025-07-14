@@ -1,4 +1,4 @@
-from typing import Callable
+
 
 def get_key_name(entry, *args):
     for arg in args:

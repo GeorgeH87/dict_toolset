@@ -1,7 +1,7 @@
 from typing import Callable, Literal, Generator
 
 from ._key_extractor import default_dict_key_extractor
-from ._basic import list_to_dict, extend_list
+from ._basic import extend_list, list_to_dict_primitives, seperate_list
 
 
 DifferenceType = Literal["TYPE", "MISSING", "NOT_EQUAL"]
@@ -162,23 +162,65 @@ def dict_compare(
             yield from comparer.compare(
                 data_a[key], data_b[key], current_key + [key])
 
+def primitive_list_compare(
+    list_a: list,
+    list_b: list,
+    current_key: list[str],
+) -> DifferenceGenerator:
+    dict_a = list_to_dict_primitives(list_a)
+    dict_b = list_to_dict_primitives(list_b)
+
+    for value, indexes_a in dict_a.items():
+        indexes_b = dict_b.get(value, [])
+        if len(indexes_a) > len(indexes_b):
+            for index in indexes_a[len(indexes_b):]:
+                yield Difference(
+                    current_key + [f"[{index}]"],
+                    "MISSING",
+                    value_a=value
+                )
+
+    for value, indexes_b in dict_b.items():
+        indexes_a = dict_a.get(value, [])
+        if len(indexes_b) > len(indexes_a):
+            for index in indexes_b[len(indexes_a):]:
+                yield Difference(
+                    current_key + [f"[{index}]"],
+                    "MISSING",
+                    value_b=value
+                )
+
 def list_compare(
     comparer: Comparer,
     data_a: list,
     data_b: list,
     current_key: list[str] = None,
 ) -> DifferenceGenerator:
+    """Compare two lists and yield differences
+
+    :param comparer: the comparer instance
+    :type comparer: Comparer
+    :param data_a: the first list to compare
+    :type data_a: list
+    :param data_b: the second list to compare
+    :type data_b: list
+    :param current_key: the current key path, defaults to None
+    :type current_key: list[str], optional
+    :return: a generator yielding differences
+    :rtype: DifferenceGenerator
+    """
+    
+
+
     if data_a == data_b:
         return
+    
+    primitves_a, extended_a = seperate_list(data_a, comparer.key_extractors)
+    primitves_b, extended_b = seperate_list(data_b, comparer.key_extractors)
 
-    sorter = lambda x: x if type(x) in (int, str, float) else str(x)
+    yield from primitive_list_compare(primitves_a, primitves_b, current_key)
+    yield from comparer.compare(extended_a, extended_b, current_key)
 
-    sorted_a = sorted(data_a, key=sorter)
-    sorted_b = sorted(data_b, key=sorter)
-
-    list_a = list_to_dict(sorted_a, comparer.key_extractors)
-    list_b = list_to_dict(sorted_b, comparer.key_extractors)
-    yield from comparer.compare(list_a, list_b, current_key)
 
 default_type_comparers = {
     dict: dict_compare,
