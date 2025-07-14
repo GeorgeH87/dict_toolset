@@ -38,8 +38,8 @@ class CompareTest(unittest.TestCase):
         }, {
             "name": "Supi",
             "subs": [
+                "duf",
                 "str",
-                "duf"
             ]
         }))
         self.assertEqual(len(result), 1)
@@ -54,15 +54,25 @@ class CompareTest(unittest.TestCase):
             }
         ], [
             {
-                "id": "djajshd",
-                "name": "supi",
-                "kacki": "dsadasdasd"
-            },
-            {
                 "id": "sdajsjdhas",
                 "name": "supi2",
                 "kacki": "dsad2asdasdd"
             },
+            {
+                "id": "djajshd",
+                "name": "supi",
+                "kacki": "dsadasdasd"
+            },
         ]))
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].type, "MISSING")
+
+    def test_int_index(self):
+        result = list(compare([
+            {"name": "supi"}
+        ], [
+            {"name": "supi2"}
+        ]))
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(str(result[0]), "NOT_EQUAL [0].name supi!=supi2")

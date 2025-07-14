@@ -61,10 +61,10 @@ def seperate_list(
     extended = {}
     
     for index, entry in enumerate(data):
-        if key := get_key(entry, key_extractors):
+        key = get_key(entry, key_extractors)
+        if key or isinstance(entry, (dict, list)):
+            key = key or f"[{index}]"
             extended[key] = entry
-        elif type(entry) in (dict, list):
-            extended[index] = entry
         else:
             primitives.setdefault(entry, []).append(index)
     return primitives, extended
