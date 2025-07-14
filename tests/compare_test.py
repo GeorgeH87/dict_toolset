@@ -76,3 +76,13 @@ class CompareTest(unittest.TestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(str(result[0]), "NOT_EQUAL [0].name supi!=supi2")
+
+    def test_uuid_index(self):
+        result = list(compare([
+            {"uuid": "123", "name": "supi"}
+        ], [
+            {"uuid": "123", "name": "supi2"}
+        ]))
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(str(result[0]), "NOT_EQUAL [uuid=123].name supi!=supi2")
