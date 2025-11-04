@@ -1,7 +1,9 @@
+import os
+
 __title__ = "dict_toolset"
 __description__ = ""
 __url__ = "https://dict_tools.readthedocs.io"
-__version__ = "0.0.6b"
+__version__ = os.getenv("GITHUB_REF").split("/")[-1][1:]
 __build__ = 0x023100
 __author__ = "George Haddad"
 __author_email__ = "georgeh87@live.de"
