@@ -1,18 +1,8 @@
 from typing import Callable
 
 from ._key_extractor import default_dict_key_extractor
-from ._basic import get_key, list_to_dict
+from ._basic import list_to_dict
 
-
-def _get_from_list(
-    index,
-    entries,
-    key_extractors: list[Callable]
-):
-    for entry_index, entry in enumerate(entries):
-        entry_key = get_key(entry, key_extractors) or entry_index
-        if entry_key == index:
-            return entry_index, entry
 
 def merge(
     data_a,
@@ -40,7 +30,17 @@ def merge(
                 rtn[key] = value
         return rtn
     elif type_a == list:
-        dict_data_a = list_to_dict(data_a, key_extractors)
-        dict_data_b = list_to_dict(data_b, key_extractors)
-        merged_dict = merge(dict_data_a, dict_data_b, key_extractors)
-        return list(merged_dict.values())
+        rtn_a, primitives_a, rest_a = list_to_dict(data_a, key_extractors)
+        rtn_b, primitives_b, rest_b = list_to_dict(data_b, key_extractors)
+        merged_rtn = merge(rtn_a, rtn_b, key_extractors)
+        merged_rest = merge(rest_a, rest_b, key_extractors)    
+        merged_primitives = primitives_b + [
+            primitive 
+            for primitive in primitives_a 
+            if primitive not in primitives_b
+        ]
+        return (
+            list(merged_rtn.values())
+            + list(merged_rest.values())
+            + merged_primitives
+        )

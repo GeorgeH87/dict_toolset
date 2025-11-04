@@ -1,35 +1,43 @@
 from typing import Callable
+from ._key_extractor import get_key, KeyExtractor, Key, IndexKey
 
-
-def get_key(data: any, key_extractors: list[Callable]) -> any:
-    """Extract the key with a given list of key extractors
-
-    :param data: input data
-    :type data: any
-    :param key_extractors: a list of key extractors
-    :type key_extractors: list[Callable]
-    :return: return the key
-    :rtype: any
+def list_to_dict(
+    input: list,
+    key_extractors: list[KeyExtractor] = [],
+    non_primitive_types: tuple[type, ...] = [],
+) -> tuple[dict[Key, any], list[any], dict[IndexKey, any]]:
     """
-    for key_extractor in key_extractors:
-        if key := key_extractor(data):
-            return key
-
-def list_to_dict(input: list, key_extractors: list[Callable] = []) -> dict:
-    """Convert a list into a dictionary using the given key extractors
-
-    :param input: the input list
-    :type input: list
-    :param key_extractors: a list of key extractors, defaults to []
-    :type key_extractors: list[Callable], optional
-    :return: returns a dictionary
-    :rtype: dict
+    Converts a list into a dictionary based on extracted keys. Entries without keys
+    are categorized into primitives and rest.
+    :param list input: The input list to be converted.
+    :param list key_extractors: A list of key extractor functions to extract keys from entries.
+    :param tuple[type, ...] non_primitive_types: A tuple of types considered non-primitive.
+    :return: A tuple containing:
+        - A dictionary mapping extracted keys to their corresponding entries.
+        - A list of primitive entries (entries without keys and of primitive types).
+        - A dictionary mapping IndexKey to non-primitive entries without keys.
+    :rtype: tuple[dict[Key, any], list[any], dict[IndexKey, any]]
     """
     rtn = {}
-    for index, entry in enumerate(input):
-        index = get_key(entry, key_extractors) or index
-        rtn[f"[{index}]"] = entry
-    return rtn
+    rest = []
+    primitives = []
+    
+    for entry in input:
+        key = get_key(entry, key_extractors)
+        if key:
+            rtn[key] = entry
+        else:
+            entry_type = type(entry)
+            if entry_type in non_primitive_types:
+                rest.append(entry)
+            else:
+                primitives.append(entry)
+
+    return (
+        rtn, 
+        primitives,
+        {IndexKey(index): entry for index, entry in enumerate(rest)}
+    )
 
 def extend_list(input: list, index: int):
     """

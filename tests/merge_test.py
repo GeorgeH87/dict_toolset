@@ -32,6 +32,6 @@ class MergeTest(unittest.TestCase):
 
     def test_c2(self):
         merged = merge(["name", "wann"], ["test", "wann", "wink"])
-        expected = ["name", "wann", "wink"]
+        expected = ["test", "wann", "wink", "name"]
         result = compare(merged, expected)
         self.assertEqual(len(list(result)), 0)

@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Callable, Literal, Generator
 
 from ._key_extractor import default_dict_key_extractor
@@ -34,7 +35,7 @@ class Difference:
 
     @property
     def key_str(self):
-        return ".".join(self.key).replace(".[", "[")
+        return ".".join(str(key) for key in self.key).replace(".[", "[")
 
     def __repr__(self) -> str:
         rtn = f"{self.type} {self.key_str}"
@@ -86,12 +87,20 @@ class Comparer:
     def __init__(
         self,
         key_extractors: list[Callable] = None,
-        type_comparers: dict[type, TypeComparer] = None,
+        type_comparers: dict[tuple[type, ...], TypeComparer] = None,
         ignore_keys: list[list[str]] = None
     ):
         self.key_extractors = key_extractors or [default_dict_key_extractor]
         self.type_comparers = type_comparers or default_type_comparers
         self.ignore_keys = ignore_keys
+        self.type_comparers_map = {}
+        self.non_primitive_types = set()
+
+        for types, key_extractor in self.type_comparers.items():
+            for combination in product(types, repeat=2):
+                self.type_comparers_map[combination] = key_extractor
+            for t in types:
+                self.non_primitive_types.add(t)
 
     def compare(
         self,
@@ -108,6 +117,10 @@ class Comparer:
         type_a = type(data_a)
         type_b = type(data_b)
 
+        if comparer := self.type_comparers_map.get((type_a, type_b)):
+            yield from comparer(self, data_a, data_b, current_key)
+            return
+
         if type_a != type_b:
             yield Difference(
                 current_key,
@@ -115,10 +128,6 @@ class Comparer:
                 value_a=data_a,
                 value_b=data_b
             )
-            return
-
-        if type_comparer := self.type_comparers.get(type_a):
-            yield from type_comparer(self, data_a, data_b, current_key)
             return
 
         if data_a == data_b:
@@ -162,6 +171,30 @@ def dict_compare(
             yield from comparer.compare(
                 data_a[key], data_b[key], current_key + [key])
 
+def primitive_list_compare(
+    comparer: Comparer,
+    data_a: list,
+    data_b: list,
+    current_key: list[str] = None,
+) -> DifferenceGenerator:
+    rest_b = [entry for entry in data_b]
+    for primitive_a in data_a:
+        if primitive_a in rest_b:
+            rest_b.remove(primitive_a)
+        else:
+            yield Difference(
+                current_key,
+                "MISSING",
+                value_a=primitive_a
+            )
+    
+    for rest_b in rest_b:
+        yield Difference(
+            current_key,
+            "MISSING",
+            value_b=rest_b
+        )
+
 def list_compare(
     comparer: Comparer,
     data_a: list,
@@ -171,14 +204,24 @@ def list_compare(
     if data_a == data_b:
         return
 
-    list_a = list_to_dict(data_a, comparer.key_extractors)
-    list_b = list_to_dict(data_b, comparer.key_extractors)
+    list_a, primitives_a, rest_a = list_to_dict(
+        data_a, comparer.key_extractors, comparer.non_primitive_types)
+    list_b, primitives_b, rest_b = list_to_dict(
+        data_b, comparer.key_extractors, comparer.non_primitive_types)
+
     yield from comparer.compare(list_a, list_b, current_key)
+    yield from comparer.compare(rest_a, rest_b, current_key)
+    yield from primitive_list_compare(
+        comparer,
+        primitives_a,
+        primitives_b,
+        current_key
+    )
 
 default_type_comparers = {
-    dict: dict_compare,
-    list: list_compare,
-    tuple: list_compare
+    (dict,): dict_compare,
+    (list,): list_compare,
+    (tuple,): list_compare
 }
 
 default_comparer = Comparer()
